@@ -10,6 +10,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 // AuthRequired adalah middleware untuk memverifikasi token JWT (Access Token)
@@ -51,7 +52,7 @@ func AuthRequired(c *fiber.Ctx) error {
 }
 
 // GenerateAccessToken menghasilkan Access Token JWT
-func GenerateAccessToken(userID uint, cfg *config.Config) (string, error) {
+func GenerateAccessToken(userID uuid.UUID, cfg *config.Config) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": userID,
 		"exp":     jwt.NewNumericDate(time.Now().Add(time.Minute * 30)), // Access Token berlaku 30 menit
@@ -65,7 +66,7 @@ func GenerateAccessToken(userID uint, cfg *config.Config) (string, error) {
 }
 
 // GenerateRefreshToken menghasilkan Refresh Token JWT
-func GenerateRefreshToken(userID uint, cfg *config.Config) (string, error) {
+func GenerateRefreshToken(userID uuid.UUID, cfg *config.Config) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": userID,
 		"exp":     jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)), // Refresh Token berlaku 7 hari

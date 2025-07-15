@@ -10,6 +10,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -91,10 +92,16 @@ func RefreshAccessToken(c *fiber.Ctx) error {
 	}
 
 	// Ambil userID dari claims
-	userID := uint(claims["user_id"].(float64)) // claims["user_id"] biasanya di-parse sebagai float64
-
+	userIDStr, ok := claims["user_id"].(string) // claims["user_id"] biasanya di-parse sebagai float64
+	if !ok {
+		return helpers.ErrorResponse(c, fiber.StatusUnauthorized, "User ID in refresh token is not a string or missing")
+	}
+	parsedUserID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return helpers.ErrorResponse(c, fiber.StatusUnauthorized, "Invalid user ID format in refresh token")
+	}
 	// Generate Access Token baru
-	newAccessToken, err := middleware.GenerateAccessToken(userID, cfg)
+	newAccessToken, err := middleware.GenerateAccessToken(parsedUserID, cfg)
 	if err != nil {
 		return helpers.ErrorResponse(c, fiber.StatusInternalServerError, "Could not generate new access token")
 	}
@@ -102,7 +109,7 @@ func RefreshAccessToken(c *fiber.Ctx) error {
 	// Opsional: Generate Refresh Token baru juga (rotasi refresh token)
 	// Jika Anda ingin mengimplementasikan rotasi refresh token,
 	// tambahkan logika untuk membuat newRefreshToken dan update di database (jika disimpan).
-	newRefreshToken, err := middleware.GenerateRefreshToken(userID, cfg)
+	newRefreshToken, err := middleware.GenerateRefreshToken(parsedUserID, cfg)
 	if err != nil {
 		return helpers.ErrorResponse(c, fiber.StatusInternalServerError, "Could not generate new refresh token")
 	}
