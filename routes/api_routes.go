@@ -16,15 +16,18 @@ func SetupRoutes(app *fiber.App) {
 	api.Post("/auth/refresh", controllers.RefreshAccessToken)
 
 	// Rute Publik lainnya
-	api.Post("/users", controllers.CreateUser) // Membuat user baru (bisa diakses publik)
+	api.Post("/users", controllers.CreateUser)
 
-	// Rute yang memerlukan otentikasi (Protected Routes)
 	authenticated := api.Group("/protected")
-	authenticated.Use(middleware.AuthRequired) // Terapkan middleware otentikasi
-
-	// Contoh rute yang dilindungi
+	authenticated.Use(middleware.AuthRequired)
 	authenticated.Get("/users", controllers.GetAllUsers)
 	authenticated.Get("/users/:id", controllers.GetUserByID)
 	authenticated.Put("/users/:id", controllers.UpdateUser)
 	authenticated.Delete("/users/:id", controllers.DeleteUser)
+	//books
+	authenticated.Post("/books", controllers.CreateBook)
+	authenticated.Get("/books", controllers.GetAllBooks)
+	authenticated.Get("/books/:id", controllers.GetBooksByID)
+	authenticated.Put("/books/:id", controllers.UpdateBooks)
+	authenticated.Delete("/books/:id", controllers.DeleteBooks)
 }

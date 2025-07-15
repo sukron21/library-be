@@ -4,8 +4,10 @@ import (
 	"library/database" // Sesuaikan dengan nama proyekmu
 	"library/helpers"  // Sesuaikan dengan nama proyekmu
 	"library/models"   // Sesuaikan dengan nama proyekmu
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -31,37 +33,53 @@ func CreateUser(c *fiber.Ctx) error {
 	return helpers.SuccessResponse(c, fiber.StatusCreated, "User created successfully", user)
 }
 
-// GetUserByID mendapatkan pengguna berdasarkan ID
 // GetAllUsers mendapatkan semua pengguna
 func GetAllUsers(c *fiber.Ctx) error {
-	var user []models.User // Gunakan slice (array dinamis) untuk menampung banyak user
+	var user []models.User
+	var total int64
+	page, err := strconv.Atoi(c.Query("page", "1")) // Ambil "page" dari URL, default "1"
+	if err != nil || page < 1 {
+		return helpers.ErrorResponse(c, fiber.StatusBadRequest, "Invalid page number")
+	}
 
-	// Menggunakan Find() tanpa kondisi untuk mengambil semua data
-	if result := database.DBClient.Find(&user); result.Error != nil {
-		// Jika terjadi error saat query (selain tidak ditemukan), kembalikan Internal Server Error
+	limit, err := strconv.Atoi(c.Query("limit", "10")) // Ambil "limit" dari URL, default "10"
+	if err != nil || limit < 1 {
+		return helpers.ErrorResponse(c, fiber.StatusBadRequest, "Invalid limit number")
+	}
+	offset := (page - 1) * limit
+
+	if result := database.DBClient.Model(&models.Book{}).Count(&total); result.Error != nil {
 		return helpers.ErrorResponse(c, fiber.StatusInternalServerError, result.Error.Error())
 	}
-
-	// Sembunyikan password untuk setiap user sebelum dikirim sebagai respons
-	for i := range user {
-		user[i].Password = ""
+	if result := database.DBClient.Limit(limit).Offset(offset).Find(&user); result.Error != nil {
+		return helpers.ErrorResponse(c, fiber.StatusInternalServerError, result.Error.Error())
 	}
-
-	// Jika tidak ada user ditemukan, Find() tidak mengembalikan error,
-	// tetapi slice `users` akan kosong. Kita bisa mengirimkan pesan yang sesuai.
-	if len(user) == 0 {
-		return helpers.SuccessResponse(c, fiber.StatusOK, "No users found", []models.User{}) // Mengembalikan array kosong
+	if len(user) == 0 && page > 1 { // Jika halaman lebih dari 1 dan tidak ada buku, berarti halaman kosong
+		return helpers.ErrorResponse(c, fiber.StatusNotFound, "No books found on this page")
+	} else if len(user) == 0 { // Jika di halaman 1 pun tidak ada buku sama sekali
+		return helpers.SuccessResponse(c, fiber.StatusOK, "No books found", []models.Book{})
 	}
-
-	return helpers.SuccessResponse(c, fiber.StatusOK, "Users retrieved successfully", user)
+	totalPages := (total + int64(limit) - 1) / int64(limit)
+	return helpers.SuccessResponse(c, fiber.StatusOK, "Books retrieved successfully", fiber.Map{
+		"data":         user,
+		"total_items":  total,
+		"current_page": page,
+		"per_page":     limit,
+		"total_pages":  totalPages,
+	})
 }
 
 // GetUserByID mendapatkan pengguna berdasarkan ID
 func GetUserByID(c *fiber.Ctx) error {
-	id := c.Params("id")
+	idStr := c.Params("id")
+	bookID, err := uuid.Parse(idStr)
+	if err != nil {
+		// Jika ID dari URL bukan UUID yang valid
+		return helpers.ErrorResponse(c, fiber.StatusBadRequest, "Invalid book ID format")
+	}
 	user := new(models.User)
 
-	if result := database.DBClient.First(&user, id); result.Error != nil {
+	if result := database.DBClient.First(&user, bookID); result.Error != nil {
 		return helpers.ErrorResponse(c, fiber.StatusNotFound, "User not found")
 	}
 
@@ -70,10 +88,17 @@ func GetUserByID(c *fiber.Ctx) error {
 
 // UpdateUser memperbarui pengguna
 func UpdateUser(c *fiber.Ctx) error {
-	id := c.Params("id")
+	idStr := c.Params("id")
+
+	userID, err := uuid.Parse(idStr)
+	if err != nil {
+		// Jika ID dari URL bukan UUID yang valid
+		return helpers.ErrorResponse(c, fiber.StatusBadRequest, "Invalid user ID format")
+	}
+
 	user := new(models.User)
 
-	if result := database.DBClient.First(&user, id); result.Error != nil {
+	if result := database.DBClient.First(&user, userID); result.Error != nil {
 		return helpers.ErrorResponse(c, fiber.StatusNotFound, "User not found")
 	}
 
@@ -106,10 +131,16 @@ func UpdateUser(c *fiber.Ctx) error {
 
 // DeleteUser menghapus pengguna
 func DeleteUser(c *fiber.Ctx) error {
-	id := c.Params("id")
+	idStr := c.Params("id")
+	userID, err := uuid.Parse(idStr)
+	if err != nil {
+		// Jika ID dari URL bukan UUID yang valid
+		return helpers.ErrorResponse(c, fiber.StatusBadRequest, "Invalid user ID format")
+	}
+
 	user := new(models.User)
 
-	if result := database.DBClient.First(&user, id); result.Error != nil {
+	if result := database.DBClient.First(&user, userID); result.Error != nil {
 		return helpers.ErrorResponse(c, fiber.StatusNotFound, "User not found")
 	}
 

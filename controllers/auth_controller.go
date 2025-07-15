@@ -2,11 +2,11 @@ package controllers
 
 import (
 	"fmt"
-	"library/config"     // SESUAIKAN DENGAN NAMA MODUL GO ANDA
-	"library/database"   // SESUAIKAN DENGAN NAMA MODUL GO ANDA
-	"library/helpers"    // SESUAIKAN DENGAN NAMA MODUL GO ANDA
-	"library/middleware" // Untuk generate token
-	"library/models"     // SESUAIKAN DENGAN NAMA MODUL GO ANDA
+	"library/config"
+	"library/database"
+	"library/helpers"
+	"library/middleware"
+	"library/models"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
@@ -106,9 +106,6 @@ func RefreshAccessToken(c *fiber.Ctx) error {
 		return helpers.ErrorResponse(c, fiber.StatusInternalServerError, "Could not generate new access token")
 	}
 
-	// Opsional: Generate Refresh Token baru juga (rotasi refresh token)
-	// Jika Anda ingin mengimplementasikan rotasi refresh token,
-	// tambahkan logika untuk membuat newRefreshToken dan update di database (jika disimpan).
 	newRefreshToken, err := middleware.GenerateRefreshToken(parsedUserID, cfg)
 	if err != nil {
 		return helpers.ErrorResponse(c, fiber.StatusInternalServerError, "Could not generate new refresh token")
