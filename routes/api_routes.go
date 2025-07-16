@@ -30,4 +30,16 @@ func SetupRoutes(app *fiber.App) {
 	authenticated.Get("/books/:id", controllers.GetBooksByID)
 	authenticated.Put("/books/:id", controllers.UpdateBooks)
 	authenticated.Delete("/books/:id", controllers.DeleteBooks)
+	//borrow
+	authenticated.Post("/record", controllers.CreateRecord)
+	authenticated.Get("/record", controllers.GetAllRecord)
+	authenticated.Get("/record/:id", controllers.GetRecordByID)
+	authenticated.Put("/record/:id", controllers.UpdateRecords)
+	authenticated.Delete("/record/:id", controllers.DeleteRecords)
+	//dashboard
+	authenticated.Get("/dashboard/summary", controllers.GetDashboardSummary)
+	authenticated.Get("/dashboard/monthly-trend", controllers.GetMonthlyBorrowingTrend)
+	authenticated.Get("/dashboard/latest-activity", controllers.GetLatestActivity)
+	authenticated.Get("/dashboard/top-borrowed-books", controllers.GetTopBorrowedBooks)
+	authenticated.Get("/dashboard/categories-distribution", controllers.GetBookCategoriesDistribution)
 }

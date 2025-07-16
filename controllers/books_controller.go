@@ -22,10 +22,10 @@ func CreateBook(c *fiber.Ctx) error {
 		return helpers.ErrorResponse(c, fiber.StatusInternalServerError, result.Error.Error())
 	}
 
-	return helpers.SuccessResponse(c, fiber.StatusCreated, "User created successfully", Books)
+	return helpers.SuccessResponse(c, fiber.StatusCreated, "Books created successfully", Books)
 }
 
-// GetAllUsers mendapatkan semua pengguna
+// GetAllBook mendapatkan semua pengguna
 func GetAllBooks(c *fiber.Ctx) error {
 	var books []models.Book
 	var total int64
