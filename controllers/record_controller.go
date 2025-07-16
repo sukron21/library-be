@@ -18,12 +18,22 @@ func CreateRecord(c *fiber.Ctx) error {
 		return helpers.ErrorResponse(c, fiber.StatusBadRequest, "Invalid request body")
 	}
 
+	// Ambil user_id dari JWT token (middleware simpan di Locals)
+	userIDStr, ok := c.Locals("userID").(string)
+	if !ok || userIDStr == "" {
+		return helpers.ErrorResponse(c, fiber.StatusUnauthorized, "User ID not found in token")
+	}
+
+	// Set user_id dari token ke struct
+	record.User_id = userIDStr
+
+	// Simpan ke database
 	if result := database.DBClient.Create(&record); result.Error != nil {
 		return helpers.ErrorResponse(c, fiber.StatusInternalServerError, result.Error.Error())
 	}
 
-	// Memuat data terkait 'Book' dan 'User'
-	if err := database.DBClient.Preload("Book").Preload("User").First(&record, record.ID).Error; err != nil {
+	// Preload relasi Book dan User
+	if err := database.DBClient.Preload("Book").Preload("User").First(&record, "id = ?", record.ID).Error; err != nil {
 		return helpers.ErrorResponse(c, fiber.StatusInternalServerError, "Failed to preload related data: "+err.Error())
 	}
 
@@ -114,7 +124,7 @@ func UpdateRecords(c *fiber.Ctx) error {
 	if updates.Borrow_date.IsZero() {
 		Records.Borrow_date = updates.Borrow_date
 	}
-	if updates.ReturnDate.IsZero() {
+	if updates.ReturnDate != nil {
 		Records.ReturnDate = updates.ReturnDate
 	}
 
