@@ -11,7 +11,7 @@ type User struct {
 	ID       uuid.UUID `json:"id" gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
 	Name     string    `json:"name"`
 	Email    string    `json:"email" gorm:"unique"`
-	Password string    `json:"-"` // Jangan sertakan password saat marshal JSON
+	Password string    `json:"password"` // Jangan sertakan password saat marshal JSON
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
