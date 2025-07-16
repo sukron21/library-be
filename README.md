@@ -1,13 +1,6 @@
 <br />
 <p align="center">
-
   <h3 align="center">Library API</h3>
-  <p align="center">
-    <image align="center" width="200" src='./public/blanja_logo.png' />
-  </p>
-  <p align="center">
-    View API Demo
-  </p>
 </p>
 
 <!-- TABLE OF CONTENTS -->
