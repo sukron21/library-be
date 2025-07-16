@@ -4,6 +4,7 @@ import "github.com/gofiber/fiber/v2"
 
 // APIResponse adalah struktur untuk respons API yang konsisten
 type APIResponse struct {
+	Code    int         `json:"code"`
 	Success bool        `json:"success"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
@@ -12,6 +13,7 @@ type APIResponse struct {
 // SuccessResponse mengirimkan respons sukses
 func SuccessResponse(c *fiber.Ctx, statusCode int, message string, data interface{}) error {
 	return c.Status(statusCode).JSON(APIResponse{
+		Code:    statusCode,
 		Success: true,
 		Message: message,
 		Data:    data,
@@ -21,6 +23,7 @@ func SuccessResponse(c *fiber.Ctx, statusCode int, message string, data interfac
 // ErrorResponse mengirimkan respons error
 func ErrorResponse(c *fiber.Ctx, statusCode int, message string) error {
 	return c.Status(statusCode).JSON(APIResponse{
+		Code:    statusCode,
 		Success: false,
 		Message: message,
 		Data:    nil,
