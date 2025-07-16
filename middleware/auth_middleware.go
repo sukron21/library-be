@@ -2,10 +2,9 @@ package middleware
 
 import (
 	"fmt"
-	"library/config"  // SESUAIKAN DENGAN NAMA MODUL GO ANDA
-	"library/helpers" // SESUAIKAN DENGAN NAMA MODUL GO ANDA
+	"library/config"  // Sesuaikan dengan nama modulmu
+	"library/helpers" // Sesuaikan dengan nama modulmu
 	"strings"
-
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -20,32 +19,44 @@ func AuthRequired(c *fiber.Ctx) error {
 		return helpers.ErrorResponse(c, fiber.StatusUnauthorized, "Authorization header required")
 	}
 
+	// Hilangkan "Bearer " di depan
 	tokenString := strings.Replace(authHeader, "Bearer ", "", 1)
 	if tokenString == "" {
 		return helpers.ErrorResponse(c, fiber.StatusUnauthorized, "Bearer token not found")
 	}
 
-	cfg := config.LoadConfig() // Muat konfigurasi untuk secret key
+	cfg := config.LoadConfig()
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		// Pastikan metode penandatanganan adalah HMAC
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		// Mengembalikan secret key
 		return []byte(cfg.JWTSecret), nil
 	})
 
 	if err != nil {
-		// Log error lebih detail untuk debugging
 		fmt.Printf("JWT parsing error: %v\n", err)
 		return helpers.ErrorResponse(c, fiber.StatusUnauthorized, "Invalid or expired token")
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		// Set user ID atau informasi lainnya ke dalam context Fiber jika diperlukan
-		// Ini memungkinkan controller mengakses user_id
-		c.Locals("userID", claims["user_id"])
-		return c.Next() // Lanjutkan ke handler berikutnya
+		// Ambil user_id dari claims
+		userIDClaim := claims["user_id"]
+		if userIDClaim == nil {
+			return helpers.ErrorResponse(c, fiber.StatusUnauthorized, "User ID not found in token claims")
+		}
+
+		// Pastikan dalam bentuk string
+		userIDStr := fmt.Sprintf("%v", userIDClaim)
+
+		// Validasi jika benar UUID
+		if _, err := uuid.Parse(userIDStr); err != nil {
+			return helpers.ErrorResponse(c, fiber.StatusBadRequest, "Invalid user ID format in token")
+		}
+
+		// Simpan ke context
+		c.Locals("userID", userIDStr)
+		return c.Next()
 	} else {
 		return helpers.ErrorResponse(c, fiber.StatusUnauthorized, "Invalid token claims")
 	}
@@ -54,10 +65,9 @@ func AuthRequired(c *fiber.Ctx) error {
 // GenerateAccessToken menghasilkan Access Token JWT
 func GenerateAccessToken(userID uuid.UUID, cfg *config.Config) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": userID,
-		"exp":     jwt.NewNumericDate(time.Now().Add(time.Minute * 30)), // Access Token berlaku 30 menit
+		"user_id": userID.String(),                                      // Pastikan UUID dikonversi string
+		"exp":     jwt.NewNumericDate(time.Now().Add(time.Minute * 30)), // Expired 30 menit
 	})
-
 	tokenString, err := token.SignedString([]byte(cfg.JWTSecret))
 	if err != nil {
 		return "", err
@@ -68,10 +78,9 @@ func GenerateAccessToken(userID uuid.UUID, cfg *config.Config) (string, error) {
 // GenerateRefreshToken menghasilkan Refresh Token JWT
 func GenerateRefreshToken(userID uuid.UUID, cfg *config.Config) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": userID,
-		"exp":     jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)), // Refresh Token berlaku 7 hari
+		"user_id": userID.String(),                                        // Pastikan UUID dikonversi string
+		"exp":     jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)), // Expired 7 hari
 	})
-
 	tokenString, err := token.SignedString([]byte(cfg.JWTSecret))
 	if err != nil {
 		return "", err

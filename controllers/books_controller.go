@@ -142,3 +142,16 @@ func DeleteBooks(c *fiber.Ctx) error {
 
 	return helpers.SuccessResponse(c, fiber.StatusOK, "Books deleted successfully", nil)
 }
+
+// GetAllBooksNoPagination mendapatkan semua buku tanpa pagination
+func GetAllBooksNoPagination(c *fiber.Ctx) error {
+	var books []models.Book
+	if result := database.DBClient.Find(&books); result.Error != nil {
+		return helpers.ErrorResponse(c, fiber.StatusInternalServerError, result.Error.Error())
+	}
+	if len(books) == 0 {
+		return helpers.SuccessResponse(c, fiber.StatusOK, "No books found", []models.Book{})
+	}
+
+	return helpers.SuccessResponse(c, fiber.StatusOK, "All books retrieved successfully", books)
+}

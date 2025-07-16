@@ -75,7 +75,7 @@ func GetUserByID(c *fiber.Ctx) error {
 	bookID, err := uuid.Parse(idStr)
 	if err != nil {
 		// Jika ID dari URL bukan UUID yang valid
-		return helpers.ErrorResponse(c, fiber.StatusBadRequest, "Invalid book ID format")
+		return helpers.ErrorResponse(c, fiber.StatusBadRequest, "Invalid User ID format")
 	}
 	user := new(models.User)
 
@@ -149,4 +149,41 @@ func DeleteUser(c *fiber.Ctx) error {
 	}
 
 	return helpers.SuccessResponse(c, fiber.StatusOK, "User deleted successfully", nil)
+}
+
+func GetCurrentUser(c *fiber.Ctx) error {
+	userID := c.Locals("userID")
+	if userID == nil {
+		return helpers.ErrorResponse(c, fiber.StatusUnauthorized, "User ID not found in token")
+	}
+	// Konversi ke UUID
+	id, err := uuid.Parse(userID.(string))
+	if err != nil {
+		return helpers.ErrorResponse(c, fiber.StatusBadRequest, "Invalid user ID format")
+	}
+
+	user := new(models.User)
+	if result := database.DBClient.First(&user, id); result.Error != nil {
+		return helpers.ErrorResponse(c, fiber.StatusNotFound, "User not found")
+	}
+
+	user.Password = ""
+
+	return helpers.SuccessResponse(c, fiber.StatusOK, "User retrieved successfully", user)
+}
+
+func GetAllUsersNoPagination(c *fiber.Ctx) error {
+	var users []models.User
+
+	// Ambil semua user
+	if result := database.DBClient.Find(&users); result.Error != nil {
+		return helpers.ErrorResponse(c, fiber.StatusInternalServerError, result.Error.Error())
+	}
+
+	// Hapus password sebelum return
+	for i := range users {
+		users[i].Password = ""
+	}
+
+	return helpers.SuccessResponse(c, fiber.StatusOK, "All users retrieved successfully", users)
 }

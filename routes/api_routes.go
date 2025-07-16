@@ -21,12 +21,16 @@ func SetupRoutes(app *fiber.App) {
 	authenticated := api.Group("/protected")
 	authenticated.Use(middleware.AuthRequired)
 	authenticated.Get("/users", controllers.GetAllUsers)
+	authenticated.Get("/users/all", controllers.GetAllUsersNoPagination)
+	authenticated.Get("/users/me", controllers.GetCurrentUser)
 	authenticated.Get("/users/:id", controllers.GetUserByID)
 	authenticated.Put("/users/:id", controllers.UpdateUser)
 	authenticated.Delete("/users/:id", controllers.DeleteUser)
+
 	//books
 	authenticated.Post("/books", controllers.CreateBook)
 	authenticated.Get("/books", controllers.GetAllBooks)
+	authenticated.Get("/books/all", controllers.GetAllBooksNoPagination)
 	authenticated.Get("/books/:id", controllers.GetBooksByID)
 	authenticated.Put("/books/:id", controllers.UpdateBooks)
 	authenticated.Delete("/books/:id", controllers.DeleteBooks)
